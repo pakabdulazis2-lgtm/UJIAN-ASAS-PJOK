@@ -1,0 +1,6 @@
+{
+  "name": "Ujian ASAS PJOK",
+  "description": "Aplikasi Ujian Online ASAS PJOK SD Kelas 1-6 dengan Mode Guru (AI Pembuat Soal, Manajemen Siswa, Daftar Nilai, Export Word/PDF/Excel, Anti-Curang) dan Mode Siswa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

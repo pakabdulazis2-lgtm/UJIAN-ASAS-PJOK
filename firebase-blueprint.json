@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "SchoolConfig": {
+      "title": "SchoolConfig",
+      "description": "Konfigurasi sekolah, judul ujian, nama guru, logo, tema, dan sandi mode guru.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID pemilik sekolah." },
+        "examTitle": { "type": "string", "description": "Judul ujian yang tampil di aplikasi (default: UJIAN ASAS PJOK)." },
+        "schoolName": { "type": "string", "description": "Nama sekolah." },
+        "teacherName": { "type": "string", "description": "Nama guru PJOK." },
+        "teacherPassword": { "type": "string", "description": "Sandi akses Mode Guru (default: Abdulazis19)." },
+        "logoData": { "type": "string", "description": "URL atau data URI gambar logo sekolah." },
+        "themeStyle": { "type": "string", "enum": ["TEAL", "CRIMSON", "BLUE", "FOREST"], "description": "Tema warna tampilan aplikasi." },
+        "shuffleQuestions": { "type": "boolean", "description": "Acak nomor urutan soal untuk setiap siswa." },
+        "examDurationMinutes": { "type": "integer", "description": "Durasi ujian dalam menit (default: 90)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembuatan (FieldValue.serverTimestamp)." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembaruan (FieldValue.serverTimestamp)." }
+      },
+      "required": ["userId", "examTitle", "schoolName", "teacherName", "teacherPassword", "themeStyle", "shuffleQuestions", "examDurationMinutes", "createdAt", "updatedAt"]
+    },
+    "ExamQuestion": {
+      "title": "ExamQuestion",
+      "description": "Butir soal PJOK pilihan ganda per kelas (1-6) beserta kunci jawaban, bantuan pembahasan, dan gambar opsional.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID pemilik." },
+        "grade": { "type": "integer", "description": "Tingkat kelas 1 sampai 6." },
+        "orderNumber": { "type": "integer", "description": "Nomor urut soal." },
+        "questionText": { "type": "string", "description": "Teks pertanyaan soal." },
+        "optionA": { "type": "string", "description": "Pilihan jawaban A." },
+        "optionB": { "type": "string", "description": "Pilihan jawaban B." },
+        "optionC": { "type": "string", "description": "Pilihan jawaban C." },
+        "optionD": { "type": "string", "description": "Pilihan jawaban D." },
+        "correctAnswer": { "type": "string", "enum": ["A", "B", "C", "D"], "description": "Kunci jawaban benar (hanya terlihat di Mode Guru)." },
+        "explanation": { "type": "string", "description": "Pembahasan/bantuan jawaban untuk guru." },
+        "imageData": { "type": "string", "description": "Opsional URL atau data URI gambar soal." },
+        "sourceType": { "type": "string", "enum": ["MANUAL", "AI", "IMPORT"], "description": "Asal pembuatan soal." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembuatan." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembaruan." }
+      },
+      "required": ["userId", "grade", "orderNumber", "questionText", "optionA", "optionB", "optionC", "optionD", "correctAnswer", "sourceType", "createdAt", "updatedAt"]
+    },
+    "StudentAccount": {
+      "title": "StudentAccount",
+      "description": "Akun siswa yang dibuat oleh guru untuk login Mode Siswa.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID pemilik." },
+        "fullName": { "type": "string", "description": "Nama lengkap siswa." },
+        "grade": { "type": "integer", "description": "Kelas siswa (1 sampai 6)." },
+        "password": { "type": "string", "description": "Sandi siswa yang dibuat guru." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembuatan." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembaruan." }
+      },
+      "required": ["userId", "fullName", "grade", "password", "createdAt", "updatedAt"]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Hasil ujian siswa termasuk skor, benar/salah, catatan pelanggaran kecurangan, dan detail jawaban.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID pemilik." },
+        "studentId": { "type": "string", "description": "ID akun siswa." },
+        "studentName": { "type": "string", "description": "Nama lengkap siswa." },
+        "grade": { "type": "integer", "description": "Kelas siswa (1 sampai 6)." },
+        "examTitle": { "type": "string", "description": "Judul ujian saat dikerjakan." },
+        "totalQuestions": { "type": "integer", "description": "Total jumlah soal." },
+        "correctCount": { "type": "integer", "description": "Jumlah jawaban benar." },
+        "wrongCount": { "type": "integer", "description": "Jumlah jawaban salah." },
+        "unansweredCount": { "type": "integer", "description": "Jumlah soal tidak dijawab." },
+        "score": { "type": "integer", "description": "Nilai akhir 0-100." },
+        "durationSecondsUsed": { "type": "integer", "description": "Durasi pengerjaan dalam detik." },
+        "autoLocked": { "type": "boolean", "description": "True jika terkunci otomatis saat waktu habis." },
+        "cheatCount": { "type": "integer", "description": "Jumlah pelanggaran keluar aplikasi/curang." },
+        "cheatLogs": { "type": "array", "description": "Daftar catatan waktu & alasan deteksi kecurangan." },
+        "answerDetails": { "type": "array", "description": "Rincian jawaban siswa per nomor soal." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembuatan." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp pembaruan." }
+      },
+      "required": ["userId", "studentId", "studentName", "grade", "examTitle", "totalQuestions", "correctCount", "wrongCount", "unansweredCount", "score", "durationSecondsUsed", "autoLocked", "cheatCount", "cheatLogs", "answerDetails", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/config/{configId}": {
+      "schema": { "$ref": "#/entities/SchoolConfig" },
+      "description": "Pengaturan sekolah, judul ujian, sandi guru, dan logo sekolah."
+    },
+    "/users/{userId}/questions/{questionId}": {
+      "schema": { "$ref": "#/entities/ExamQuestion" },
+      "description": "Bank soal PJOK kelas 1-6."
+    },
+    "/users/{userId}/students/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentAccount" },
+      "description": "Daftar siswa beserta sandi login yang dibuat guru."
+    },
+    "/users/{userId}/results/{resultId}": {
+      "schema": { "$ref": "#/entities/ExamResult" },
+      "description": "Daftar nilai, detail jawaban siswa, dan deteksi kecurangan."
+    }
+  }
+}

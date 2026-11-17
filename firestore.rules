@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidSchoolConfig(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.examTitle is string && data.examTitle.size() >= 1 && data.examTitle.size() <= 100 &&
+             data.schoolName is string && data.schoolName.size() >= 1 && data.schoolName.size() <= 120 &&
+             data.teacherName is string && data.teacherName.size() >= 1 && data.teacherName.size() <= 100 &&
+             data.teacherPassword is string && data.teacherPassword.size() >= 1 && data.teacherPassword.size() <= 64 &&
+             (!('logoData' in data) || (data.logoData is string && data.logoData.size() <= 350000)) &&
+             data.themeStyle is string && data.themeStyle in ['TEAL', 'CRIMSON', 'BLUE', 'FOREST'] &&
+             data.shuffleQuestions is bool &&
+             data.examDurationMinutes is int && data.examDurationMinutes >= 5 && data.examDurationMinutes <= 240 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidExamQuestion(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.grade is int && data.grade >= 1 && data.grade <= 6 &&
+             data.orderNumber is int && data.orderNumber >= 1 && data.orderNumber <= 1000 &&
+             data.questionText is string && data.questionText.size() >= 1 && data.questionText.size() <= 2000 &&
+             data.optionA is string && data.optionA.size() >= 1 && data.optionA.size() <= 600 &&
+             data.optionB is string && data.optionB.size() >= 1 && data.optionB.size() <= 600 &&
+             data.optionC is string && data.optionC.size() >= 1 && data.optionC.size() <= 600 &&
+             data.optionD is string && data.optionD.size() >= 1 && data.optionD.size() <= 600 &&
+             data.correctAnswer is string && data.correctAnswer in ['A', 'B', 'C', 'D'] &&
+             (!('explanation' in data) || (data.explanation is string && data.explanation.size() <= 1500)) &&
+             (!('imageData' in data) || (data.imageData is string && data.imageData.size() <= 350000)) &&
+             data.sourceType is string && data.sourceType in ['MANUAL', 'AI', 'IMPORT'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidStudentAccount(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+             data.grade is int && data.grade >= 1 && data.grade <= 6 &&
+             data.password is string && data.password.size() >= 1 && data.password.size() <= 64 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidExamResult(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.studentId is string && data.studentId.size() >= 1 && data.studentId.size() <= 128 &&
+             data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 100 &&
+             data.grade is int && data.grade >= 1 && data.grade <= 6 &&
+             data.examTitle is string && data.examTitle.size() >= 1 && data.examTitle.size() <= 100 &&
+             data.totalQuestions is int && data.totalQuestions >= 0 && data.totalQuestions <= 200 &&
+             data.correctCount is int && data.correctCount >= 0 && data.correctCount <= 200 &&
+             data.wrongCount is int && data.wrongCount >= 0 && data.wrongCount <= 200 &&
+             data.unansweredCount is int && data.unansweredCount >= 0 && data.unansweredCount <= 200 &&
+             data.score is int && data.score >= 0 && data.score <= 100 &&
+             data.durationSecondsUsed is int && data.durationSecondsUsed >= 0 && data.durationSecondsUsed <= 86400 &&
+             data.autoLocked is bool &&
+             data.cheatCount is int && data.cheatCount >= 0 && data.cheatCount <= 1000 &&
+             data.cheatLogs is list && data.cheatLogs.size() <= 50 &&
+             (data.cheatLogs.size() == 0 || data.cheatLogs[0] is string) &&
+             data.answerDetails is list && data.answerDetails.size() <= 200 &&
+             (data.answerDetails.size() == 0 || data.answerDetails[0] is map) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/config/{configId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(configId);
+      allow create: if isOwner(userId) &&
+                       isValidId(configId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'examTitle', 'schoolName', 'teacherName',
+                         'teacherPassword', 'themeStyle', 'shuffleQuestions',
+                         'examDurationMinutes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'examTitle', 'schoolName', 'teacherName',
+                         'teacherPassword', 'logoData', 'themeStyle', 'shuffleQuestions',
+                         'examDurationMinutes', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidSchoolConfig(incoming(), userId);
+      allow update: if isOwner(userId) &&
+                       isValidId(configId) &&
+                       isValidSchoolConfig(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'examTitle', 'schoolName', 'teacherName',
+                         'teacherPassword', 'logoData', 'themeStyle', 'shuffleQuestions',
+                         'examDurationMinutes', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(configId);
+    }
+
+    match /users/{userId}/questions/{questionId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(questionId);
+      allow create: if isOwner(userId) &&
+                       isValidId(questionId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'grade', 'orderNumber', 'questionText',
+                         'optionA', 'optionB', 'optionC', 'optionD',
+                         'correctAnswer', 'sourceType', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'grade', 'orderNumber', 'questionText',
+                         'optionA', 'optionB', 'optionC', 'optionD',
+                         'correctAnswer', 'explanation', 'imageData',
+                         'sourceType', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidExamQuestion(incoming(), userId);
+      allow update: if isOwner(userId) &&
+                       isValidId(questionId) &&
+                       isValidExamQuestion(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'grade', 'orderNumber', 'questionText',
+                         'optionA', 'optionB', 'optionC', 'optionD',
+                         'correctAnswer', 'explanation', 'imageData',
+                         'sourceType', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(questionId);
+    }
+
+    match /users/{userId}/students/{studentId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(studentId);
+      allow create: if isOwner(userId) &&
+                       isValidId(studentId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'fullName', 'grade', 'password', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'fullName', 'grade', 'password', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidStudentAccount(incoming(), userId);
+      allow update: if isOwner(userId) &&
+                       isValidId(studentId) &&
+                       isValidStudentAccount(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'fullName', 'grade', 'password', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(studentId);
+    }
+
+    match /users/{userId}/results/{resultId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(resultId);
+      allow create: if isOwner(userId) &&
+                       isValidId(resultId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'studentId', 'studentName', 'grade', 'examTitle',
+                         'totalQuestions', 'correctCount', 'wrongCount', 'unansweredCount',
+                         'score', 'durationSecondsUsed', 'autoLocked', 'cheatCount',
+                         'cheatLogs', 'answerDetails', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'studentId', 'studentName', 'grade', 'examTitle',
+                         'totalQuestions', 'correctCount', 'wrongCount', 'unansweredCount',
+                         'score', 'durationSecondsUsed', 'autoLocked', 'cheatCount',
+                         'cheatLogs', 'answerDetails', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidExamResult(incoming(), userId);
+      allow update: if isOwner(userId) &&
+                       isValidId(resultId) &&
+                       isValidExamResult(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'score', 'correctCount', 'wrongCount', 'unansweredCount', 'updatedAt'
+                       ]);
+      allow delete: if isOwner(userId) && isValidId(resultId);
+    }
+  }
+}
